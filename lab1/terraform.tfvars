@@ -1,0 +1,5 @@
+aws_profile   = "academy"
+aws_region    = "us-east-1"
+instance_type = "t2.micro"
+instance_name = "lab1-ec2-instance"
+key_name      = "lab1-key"

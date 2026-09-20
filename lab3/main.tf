@@ -177,7 +177,7 @@ resource "aws_autoscaling_group" "web" {
   target_group_arns   = [aws_lb_target_group.app.arn]
 
   health_check_type         = "ELB"
-  health_check_grace_period = 60
+  health_check_grace_period = 180
 
   launch_template {
     id      = aws_launch_template.web.id

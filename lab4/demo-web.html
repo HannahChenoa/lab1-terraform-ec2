@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Lab4 DSE - Cache vs No Cache</title>
+<style>
+  :root {
+    --bg: #0f172a;
+    --panel: #1e293b;
+    --border: #334155;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+    --accent: #a78bfa;
+    --db: #f87171;
+    --cache: #34d399;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: linear-gradient(135deg,#0f172a,#1e293b);
+    color: var(--text);
+    padding: 2rem;
+    min-height: 100vh;
+  }
+  h1 { color: var(--accent); margin-bottom: 0.2rem; }
+  .subtitle { color: var(--muted); margin-top: 0; margin-bottom: 1.5rem; }
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  label { display:block; color: var(--muted); font-size: 0.8rem; margin-bottom: 0.3rem; text-transform: uppercase; letter-spacing: 0.05em; }
+  input[type=text], input[type=number] {
+    width: 100%;
+    padding: 0.6rem 0.8rem;
+    background: #0f172a;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 0.95rem;
+    margin-bottom: 1rem;
+  }
+  .row { display: flex; gap: 1rem; flex-wrap: wrap; }
+  .row > div { flex: 1; min-width: 200px; }
+  button {
+    background: var(--accent);
+    color: #1e0f3d;
+    border: none;
+    padding: 0.7rem 1.6rem;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    cursor: pointer;
+  }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  .status { color: var(--muted); margin-top: 0.8rem; min-height: 1.2rem; }
+  .tables { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+  .tables .panel { flex: 1; min-width: 320px; }
+  h2 { margin-top: 0; font-size: 1.1rem; }
+  h2.db { color: var(--db); }
+  h2.cache { color: var(--cache); }
+  table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+  th, td { text-align: left; padding: 0.4rem 0.5rem; border-bottom: 1px solid var(--border); }
+  th { color: var(--muted); font-weight: 600; }
+  .bar-wrap { display:flex; align-items:center; gap: 0.5rem; }
+  .bar { height: 14px; border-radius: 4px; }
+  .bar.db { background: var(--db); }
+  .bar.cache { background: var(--cache); }
+  .summary { display: flex; gap: 2rem; flex-wrap: wrap; align-items: flex-end; margin-top: 1rem; }
+  .stat { }
+  .stat .value { font-size: 2rem; font-weight: 800; }
+  .stat .value.db { color: var(--db); }
+  .stat .value.cache { color: var(--cache); }
+  .stat .label { color: var(--muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; }
+  .improvement { font-size: 1.3rem; color: var(--cache); font-weight: 700; margin-top: 0.5rem; }
+</style>
+</head>
+<body>
+
+  <h1>Lab 4 - DSE ITESO</h1>
+  <p class="subtitle">Comparación en vivo: mismo query, endpoint SIN cache (<code>/db/item</code>) vs endpoint CON cache (<code>/item</code>)</p>
+
+  <div class="panel">
+    <div class="row">
+      <div>
+        <label>URL del ALB</label>
+        <input type="text" id="albUrl" value="http://lab4-alb-1495239636.us-east-1.elb.amazonaws.com">
+      </div>
+      <div style="max-width:160px;">
+        <label># de items a probar</label>
+        <input type="number" id="numIds" value="8" min="1" max="20">
+      </div>
+    </div>
+    <button id="runBtn" onclick="runDemo()">▶ Ejecutar demo</button>
+    <div class="status" id="status"></div>
+  </div>
+
+  <div class="tables">
+    <div class="panel">
+      <h2 class="db">Sin cache — /db/item/{id}</h2>
+      <table>
+        <thead><tr><th>Id</th><th>source</th><th>ms</th><th></th></tr></thead>
+        <tbody id="dbTable"></tbody>
+      </table>
+    </div>
+    <div class="panel">
+      <h2 class="cache">Con cache — /item/{id}</h2>
+      <table>
+        <thead><tr><th>Id</th><th>source</th><th>ms</th><th></th></tr></thead>
+        <tbody id="cacheTable"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="panel" id="summaryPanel" style="display:none;">
+    <div class="summary">
+      <div class="stat">
+        <div class="value db" id="avgDb">-</div>
+        <div class="label">Promedio sin cache (ms)</div>
+      </div>
+      <div class="stat">
+        <div class="value cache" id="avgCache">-</div>
+        <div class="label">Promedio con cache (ms)</div>
+      </div>
+    </div>
+    <div class="improvement" id="improvement"></div>
+  </div>
+
+<script>
+async function timedFetch(url) {
+  const t0 = performance.now();
+  const res = await fetch(url, { cache: 'no-store' });
+  const data = await res.json();
+  const ms = performance.now() - t0;
+  return { data, ms };
+}
+
+function addRow(tbodyId, id, source, ms, maxMs, colorClass) {
+  const tbody = document.getElementById(tbodyId);
+  const tr = document.createElement('tr');
+  const width = Math.max(4, Math.round((ms / maxMs) * 100));
+  tr.innerHTML = `
+    <td>${id}</td>
+    <td>${source}</td>
+    <td>${ms.toFixed(1)}</td>
+    <td style="width:45%;"><div class="bar-wrap"><div class="bar ${colorClass}" style="width:${width}%"></div></div></td>
+  `;
+  tbody.appendChild(tr);
+}
+
+function setStatus(msg) {
+  document.getElementById('status').textContent = msg;
+}
+
+async function runDemo() {
+  const albUrl = document.getElementById('albUrl').value.replace(/\/$/, '');
+  const n = parseInt(document.getElementById('numIds').value, 10) || 8;
+  const ids = Array.from({length: n}, (_, i) => i + 1);
+
+  const btn = document.getElementById('runBtn');
+  btn.disabled = true;
+  document.getElementById('dbTable').innerHTML = '';
+  document.getElementById('cacheTable').innerHTML = '';
+  document.getElementById('summaryPanel').style.display = 'none';
+
+  try {
+    setStatus('Probando endpoint SIN cache (/db/item)...');
+    const dbResults = [];
+    for (const id of ids) {
+      const { data, ms } = await timedFetch(`${albUrl}/db/item/${id}`);
+      dbResults.push(ms);
+      addRow('dbTable', id, data.source, ms, 800, 'db');
+    }
+
+    setStatus('Precalentando el cache...');
+    for (const id of ids) {
+      await fetch(`${albUrl}/item/${id}`, { cache: 'no-store' });
+    }
+
+    setStatus('Probando endpoint CON cache (/item)...');
+    const cacheResults = [];
+    for (const id of ids) {
+      const { data, ms } = await timedFetch(`${albUrl}/item/${id}`);
+      cacheResults.push(ms);
+      addRow('cacheTable', id, data.source, ms, 800, 'cache');
+    }
+
+    const avg = arr => arr.reduce((a, b) => a + b, 0) / arr.length;
+    const avgDb = avg(dbResults);
+    const avgCache = avg(cacheResults);
+    const improvement = ((1 - (avgCache / avgDb)) * 100).toFixed(1);
+
+    document.getElementById('avgDb').textContent = avgDb.toFixed(1);
+    document.getElementById('avgCache').textContent = avgCache.toFixed(1);
+    document.getElementById('improvement').textContent =
+      `El cache respondió ${improvement}% más rápido en promedio (${avgDb.toFixed(0)}ms → ${avgCache.toFixed(0)}ms)`;
+    document.getElementById('summaryPanel').style.display = 'block';
+    setStatus('Listo.');
+  } catch (err) {
+    setStatus('Error: ' + err.message + ' (revisa la URL del ALB, o si la infraestructura sigue arriba)');
+  } finally {
+    btn.disabled = false;
+  }
+}
+</script>
+
+</body>
+</html>

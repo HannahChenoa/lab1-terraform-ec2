@@ -80,7 +80,7 @@ function respond(statusCode, bodyObj) {
     statusCode,
     statusDescription: statusCode === 200 ? '200 OK' : statusCode === 404 ? '404 Not Found' : '500 Internal Server Error',
     isBase64Encoded: false,
-    headers: { 'Content-Type': 'application/json; charset=utf-8' },
+    headers: { 'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*' },
     body: JSON.stringify(bodyObj, null, 2),
   };
 }

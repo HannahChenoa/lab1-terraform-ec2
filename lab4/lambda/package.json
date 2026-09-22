@@ -1,0 +1,10 @@
+{
+  "name": "lab4-lambda",
+  "version": "1.0.0",
+  "description": "Lambda de Lab4: sirve requests via ALB, usa RDS (MySQL) y ElastiCache (Redis)",
+  "main": "index.js",
+  "dependencies": {
+    "mysql2": "^3.11.0",
+    "ioredis": "^5.4.1"
+  }
+}

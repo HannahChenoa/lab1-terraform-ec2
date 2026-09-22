@@ -1,0 +1,11 @@
+aws_profile       = "academy"
+aws_region        = "us-east-1"
+lambda_role_name  = "LabRole"
+db_name           = "lab4db"
+db_username       = "lab4admin"
+db_instance_class = "db.t3.micro"
+cache_node_type   = "cache.t3.micro"
+lambda_runtime    = "nodejs20.x"
+lambda_timeout    = 10
+lambda_memory     = 256
+cache_ttl_seconds = 300

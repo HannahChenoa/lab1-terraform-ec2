@@ -67,7 +67,7 @@ function respond(statusCode, bodyObj) {
     statusCode,
     statusDescription: statusCode === 200 ? '200 OK' : '500 Internal Server Error',
     isBase64Encoded: false,
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json; charset=utf-8' },
     body: JSON.stringify(bodyObj, null, 2),
   };
 }

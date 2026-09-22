@@ -240,9 +240,11 @@ resource "aws_lb_target_group" "app" {
   target_type = "lambda"
 
   health_check {
-    enabled = true
-    path    = "/health"
-    matcher = "200"
+    enabled  = true
+    path     = "/health"
+    matcher  = "200"
+    interval = 35
+    timeout  = 30
   }
 }
 

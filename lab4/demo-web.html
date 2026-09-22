@@ -102,14 +102,14 @@
     <div class="panel">
       <h2 class="db">Sin cache — /db/item/{id}</h2>
       <table>
-        <thead><tr><th>Id</th><th>source</th><th>ms</th><th></th></tr></thead>
+        <thead><tr><th>Id</th><th>status</th><th>source</th><th>ms</th><th></th></tr></thead>
         <tbody id="dbTable"></tbody>
       </table>
     </div>
     <div class="panel">
       <h2 class="cache">Con cache — /item/{id}</h2>
       <table>
-        <thead><tr><th>Id</th><th>source</th><th>ms</th><th></th></tr></thead>
+        <thead><tr><th>Id</th><th>status</th><th>source</th><th>ms</th><th></th></tr></thead>
         <tbody id="cacheTable"></tbody>
       </table>
     </div>
@@ -135,18 +135,22 @@ async function timedFetch(url) {
   const res = await fetch(url, { cache: 'no-store' });
   const data = await res.json();
   const ms = performance.now() - t0;
-  return { data, ms };
+  return { data, ms, status: res.status, ok: res.ok };
 }
 
-function addRow(tbodyId, id, source, ms, maxMs, colorClass) {
+function addRow(tbodyId, id, source, ms, status, ok, maxMs, colorClass) {
   const tbody = document.getElementById(tbodyId);
   const tr = document.createElement('tr');
   const width = Math.max(4, Math.round((ms / maxMs) * 100));
+  const statusBadge = ok
+    ? `<span style="color:#34d399;">&#10003; ${status}</span>`
+    : `<span style="color:#f87171;">&#10007; ${status}</span>`;
   tr.innerHTML = `
     <td>${id}</td>
+    <td>${statusBadge}</td>
     <td>${source}</td>
     <td>${ms.toFixed(1)}</td>
-    <td style="width:45%;"><div class="bar-wrap"><div class="bar ${colorClass}" style="width:${width}%"></div></div></td>
+    <td style="width:35%;"><div class="bar-wrap"><div class="bar ${colorClass}" style="width:${width}%"></div></div></td>
   `;
   tbody.appendChild(tr);
 }
@@ -170,9 +174,9 @@ async function runDemo() {
     setStatus('Probando endpoint SIN cache (/db/item)...');
     const dbResults = [];
     for (const id of ids) {
-      const { data, ms } = await timedFetch(`${albUrl}/db/item/${id}`);
+      const { data, ms, status, ok } = await timedFetch(`${albUrl}/db/item/${id}`);
       dbResults.push(ms);
-      addRow('dbTable', id, data.source, ms, 800, 'db');
+      addRow('dbTable', id, data.source, ms, status, ok, 800, 'db');
     }
 
     setStatus('Precalentando el cache...');
@@ -183,9 +187,9 @@ async function runDemo() {
     setStatus('Probando endpoint CON cache (/item)...');
     const cacheResults = [];
     for (const id of ids) {
-      const { data, ms } = await timedFetch(`${albUrl}/item/${id}`);
+      const { data, ms, status, ok } = await timedFetch(`${albUrl}/item/${id}`);
       cacheResults.push(ms);
-      addRow('cacheTable', id, data.source, ms, 800, 'cache');
+      addRow('cacheTable', id, data.source, ms, status, ok, 800, 'cache');
     }
 
     const avg = arr => arr.reduce((a, b) => a + b, 0) / arr.length;

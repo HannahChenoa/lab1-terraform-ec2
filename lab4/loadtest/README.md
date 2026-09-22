@@ -12,13 +12,13 @@ Corridas de load test (reemplaza $ALB_URL por tu URL real, o define la
 variable como en los pasos anteriores):
 
 ```powershell
-# Corrida A - cache NO cargado (?fresh=1 fuerza ir siempre a RDS)
-docker run --rm lab4-wrk2 -t4 -c50 -d30s -R100 --latency "$ALB_URL/item/1?fresh=1"
+# Corrida A - endpoint SIN cache (/db/item nunca toca Redis)
+docker run --rm lab4-wrk2 -t4 -c50 -d30s -R100 --latency "$ALB_URL/db/item/1"
 
-# Precalentar el cache (1 sola vez, sin fresh)
+# Precalentar el cache del endpoint CON cache (1 sola vez)
 Invoke-RestMethod "$ALB_URL/item/1" | Out-Null
 
-# Corrida B - cache SI cargado (todas las respuestas salen de Redis)
+# Corrida B - endpoint CON cache (/item sirve desde Redis)
 docker run --rm lab4-wrk2 -t4 -c50 -d30s -R100 --latency "$ALB_URL/item/1"
 ```
 

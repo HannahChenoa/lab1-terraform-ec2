@@ -62,10 +62,23 @@ async function ensureSeeded(pool) {
   seeded = true;
 }
 
+// La consulta "pesada" a propósito (SLEEP simula un query costoso / join real),
+// usada por los dos endpoints para que la comparación sea justa (mismo query).
+async function queryProduct(pool, id) {
+  const [rows] = await pool.query(
+    'SELECT id, name, price, description, SLEEP(0.15) AS _delay FROM products WHERE id = ?',
+    [id]
+  );
+  const row = rows[0];
+  return row
+    ? { id: row.id, name: row.name, price: row.price, description: row.description }
+    : { id: Number(id), name: 'not-found' };
+}
+
 function respond(statusCode, bodyObj) {
   return {
     statusCode,
-    statusDescription: statusCode === 200 ? '200 OK' : '500 Internal Server Error',
+    statusDescription: statusCode === 200 ? '200 OK' : statusCode === 404 ? '404 Not Found' : '500 Internal Server Error',
     isBase64Encoded: false,
     headers: { 'Content-Type': 'application/json; charset=utf-8' },
     body: JSON.stringify(bodyObj, null, 2),
@@ -80,87 +93,85 @@ exports.handler = async (event) => {
     return respond(200, { status: 'ok', container_id: CONTAINER_ID });
   }
 
-  const match = path.match(/^\/item\/(\d+)$/);
-  const id = match ? match[1] : '1';
-  const qs = event.queryStringParameters || {};
-  const forceFresh = qs.fresh === '1'; // ?fresh=1 -> ignora y borra el cache (simula "cache no cargado")
-
-  const redis = getRedis();
   const pool = getDbPool();
-  const cacheKey = `item:${id}`;
 
-  try {
-    if (forceFresh) {
-      try {
-        if (redis.status === 'wait') await redis.connect();
-        await redis.del(cacheKey);
-      } catch (e) {
-        /* si Redis falla igual seguimos por la BD */
-      }
+  // --- Endpoint SIN cache: siempre golpea RDS directo, nunca toca Redis ---
+  const dbOnlyMatch = path.match(/^\/db\/item\/(\d+)$/);
+  if (dbOnlyMatch) {
+    const id = dbOnlyMatch[1];
+    try {
+      await ensureSeeded(pool);
+      const tDb0 = Date.now();
+      const item = await queryProduct(pool, id);
+      const dbQueryMs = Date.now() - tDb0;
+
+      return respond(200, {
+        item,
+        endpoint: '/db/item/{id}',
+        source: 'database', // este endpoint SIEMPRE es database - no usa cache
+        container_id: CONTAINER_ID,
+        db_query_ms: dbQueryMs,
+        total_latency_ms: Date.now() - t0,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (err) {
+      return respond(500, { error: err.message, container_id: CONTAINER_ID, total_latency_ms: Date.now() - t0 });
     }
+  }
 
-    let source = 'cache';
-    let item;
-    let cacheLookupMs = 0;
-    let dbQueryMs = 0;
+  // --- Endpoint CON cache: cache-aside normal (Redis primero, RDS si hay miss) ---
+  const match = path.match(/^\/item\/(\d+)$/);
+  if (match) {
+    const id = match[1];
+    const redis = getRedis();
+    const cacheKey = `item:${id}`;
 
-    const tCache0 = Date.now();
-    let raw = null;
-    if (!forceFresh) {
+    try {
+      let source = 'cache';
+      let item;
+      let cacheLookupMs = 0;
+      let dbQueryMs = 0;
+
+      const tCache0 = Date.now();
+      let raw = null;
       try {
         if (redis.status === 'wait') await redis.connect();
         raw = await redis.get(cacheKey);
       } catch (e) {
         raw = null;
       }
-    }
-    cacheLookupMs = Date.now() - tCache0;
+      cacheLookupMs = Date.now() - tCache0;
 
-    if (raw) {
-      item = JSON.parse(raw);
-    } else {
-      source = 'database';
-      const tDb0 = Date.now();
-      await ensureSeeded(pool);
-
-      // Consulta "pesada" a propósito (SLEEP simula un query costoso / join real)
-      // para que se note la diferencia real contra servir desde Redis.
-      const [rows] = await pool.query(
-        'SELECT id, name, price, description, SLEEP(0.15) AS _delay FROM products WHERE id = ?',
-        [id]
-      );
-
-      dbQueryMs = Date.now() - tDb0;
-
-      const row = rows[0];
-      item = row
-        ? { id: row.id, name: row.name, price: row.price, description: row.description }
-        : { id: Number(id), name: 'not-found' };
-
-      try {
-        await redis.set(cacheKey, JSON.stringify(item), 'EX', CACHE_TTL);
-      } catch (e) {
-        /* si no se pudo cachear, no es fatal */
+      if (raw) {
+        item = JSON.parse(raw);
+      } else {
+        source = 'database';
+        await ensureSeeded(pool);
+        const tDb0 = Date.now();
+        item = await queryProduct(pool, id);
+        dbQueryMs = Date.now() - tDb0;
+        try {
+          await redis.set(cacheKey, JSON.stringify(item), 'EX', CACHE_TTL);
+        } catch (e) {
+          /* si no se pudo cachear, no es fatal */
+        }
       }
+
+      return respond(200, {
+        item,
+        endpoint: '/item/{id}',
+        source, // "cache" | "database"
+        container_id: CONTAINER_ID,
+        cache_lookup_ms: cacheLookupMs,
+        db_query_ms: dbQueryMs,
+        total_latency_ms: Date.now() - t0,
+        cache_ttl_seconds: CACHE_TTL,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (err) {
+      return respond(500, { error: err.message, container_id: CONTAINER_ID, total_latency_ms: Date.now() - t0 });
     }
-
-    const totalLatencyMs = Date.now() - t0;
-
-    return respond(200, {
-      item,
-      source, // "cache" | "database"
-      container_id: CONTAINER_ID,
-      cache_lookup_ms: cacheLookupMs,
-      db_query_ms: dbQueryMs,
-      total_latency_ms: totalLatencyMs,
-      cache_ttl_seconds: CACHE_TTL,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err) {
-    return respond(500, {
-      error: err.message,
-      container_id: CONTAINER_ID,
-      total_latency_ms: Date.now() - t0,
-    });
   }
+
+  return respond(404, { error: 'not found', path });
 };

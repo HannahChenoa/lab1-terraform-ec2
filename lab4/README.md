@@ -14,9 +14,15 @@ Internet -> ALB (HTTP:80) -> Lambda (Node.js, target_type=lambda)
 
 - La Lambda vive dentro de la VPC default para poder hablar por red privada
   con RDS y ElastiCache (ninguno de los dos es público).
-- `GET /item/{id}` hace **cache-aside**: primero busca en Redis; si no está,
-  consulta MySQL (con un `SLEEP(0.15)` a propósito para simular una consulta
-  "cara") y guarda el resultado en Redis por `cache_ttl_seconds` (default 300s).
+- Hay **dos endpoints** que corren exactamente el mismo query, para poder
+  comparar el efecto del cache de forma limpia:
+  - `GET /item/{id}` -> **con cache** (cache-aside): primero busca en Redis;
+    si no está, consulta MySQL (con un `SLEEP(0.15)` a propósito para simular
+    una consulta "cara") y guarda el resultado en Redis por
+    `cache_ttl_seconds` (default 300s).
+  - `GET /db/item/{id}` -> **sin cache**: nunca toca Redis, siempre va directo
+    a MySQL con el mismo query. Sirve como línea base para medir "qué tan
+    lento sería sin cache".
 - `GET /health` es el health check que usa el Target Group del ALB.
 - En AWS Academy no se pueden crear IAM roles nuevos, así que la Lambda
   reutiliza el `LabRole` que ya trae la cuenta (variable `lambda_role_name`).
@@ -111,14 +117,11 @@ docker run --rm -it -v ${PWD}:/wrk2 ubuntu:22.04 bash -c "
   cd /wrk2/wrk2 && make"
 ```
 
-### Corrida A - "cache NO cargado" (siempre pega a la base de datos)
-
-Usa el parámetro `?fresh=1`, que borra la key de Redis antes de responder,
-forzando que cada request vaya a MySQL:
+### Corrida A - "cache NO cargado" (endpoint /db/item, siempre pega a la base de datos)
 
 ```bash
 ALB_URL=$(terraform output -raw alb_url)   # cópialo si corres wrk2 en otra máquina/WSL
-./wrk -t4 -c50 -d30s -R100 --latency "${ALB_URL}/item/1?fresh=1"
+./wrk -t4 -c50 -d30s -R100 --latency "${ALB_URL}/db/item/1"
 ```
 
 - `-t4`  4 threads
@@ -132,12 +135,16 @@ ALB_URL=$(terraform output -raw alb_url)   # cópialo si corres wrk2 en otra má
 Esperado: latencias altas y con más varianza (cada request hace el
 `SLEEP(0.15)` + roundtrip a RDS).
 
-### Corrida B - "cache SÍ cargado" (sirve desde Redis)
+### Corrida B - "cache SÍ cargado" (endpoint /item, sirve desde Redis)
 
 ```bash
 curl "${ALB_URL}/item/1"          # 1 sola vez, para precalentar el cache
 ./wrk -t4 -c50 -d30s -R100 --latency "${ALB_URL}/item/1"
 ```
+
+Los dos endpoints corren el mismo query (`SELECT ... WHERE id = ?` con el
+mismo `SLEEP`), la única diferencia es que `/item/{id}` sí pasa por Redis y
+`/db/item/{id}` no. Esa es la comparación limpia que pide el lab.
 
 Esperado: latencias mucho más bajas y estables (Redis responde en
 milisegundos, sin tocar RDS) - esta es la comparación que pide el lab

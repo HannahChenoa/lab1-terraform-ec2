@@ -59,3 +59,13 @@ Lambda guardar → **Redshift Serverless** (Data API, sin VPC). Grafana OSS en D
 - Responder en español, paso a paso y con comandos de PowerShell.
 - Antes de crear recursos nuevos en AWS, avisar el costo aproximado y si se borran con `terraform destroy`.
 - No borrar recursos de la cuenta sin que Hannah lo confirme.
+
+## Actualización 17 oct 2026 (tarde)
+- Redshift Serverless está BLOQUEADO en esta cuenta (AccessDenied en redshift-serverless:CreateNamespace).
+  Se cambió a **clúster provisionado ra3.large de 1 nodo** (aws_redshift_cluster + subnet group); Data API con ClusterIdentifier.
+  Cobra ~0.54 USD/h mientras exista: destruir siempre al terminar.
+- Managed Grafana y Redshift Query Editor v2 también bloqueados; se usa Grafana OSS y `consultar_redshift.py`.
+- `capturas_cloudwatch.py` genera PNGs de métricas con GetMetricWidgetImage (carpeta capturas/, ignorada en git).
+- Desplegado y probado en AWS: 329 eventos, ingesta 1→20 clientes x13.9 throughput sin errores; cache 92% más rápida
+  (3268 ms → 261 ms); con 10 clientes p95 8572 ms sin cache vs 346 ms con cache.
+- Código subido a GitHub (commit 85ff63c, carpeta lab5/). Reporte final: DSE\Lab5_706413.pdf (y .docx).

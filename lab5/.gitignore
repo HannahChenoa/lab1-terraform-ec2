@@ -7,3 +7,4 @@ sensores/outputs.json
 dashboard/.env
 __pycache__/
 .venv/
+capturas/

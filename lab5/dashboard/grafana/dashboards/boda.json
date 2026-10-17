@@ -1,0 +1,1828 @@
+{
+  "uid": "boda-en-vivo",
+  "title": "💍 Boda en vivo — Panel del planner",
+  "tags": [
+    "lab5",
+    "kinesis",
+    "sqs",
+    "lambda",
+    "redshift",
+    "api-gateway"
+  ],
+  "timezone": "browser",
+  "editable": true,
+  "refresh": "30s",
+  "time": {
+    "from": "now-15m",
+    "to": "now"
+  },
+  "schemaVersion": 39,
+  "panels": [
+    {
+      "id": 1,
+      "type": "row",
+      "title": "① Data flow: API Gateway → Kinesis → Lambda → SQS → Lambda → Redshift  (CloudWatch, 1–3 min de retraso)",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "0 · API Gateway: requests",
+      "description": "Todo lo que entra por POST /eventos y GET /resumen",
+      "gridPos": {
+        "x": 0,
+        "y": 1,
+        "w": 4,
+        "h": 7
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "cloudwatch",
+            "uid": "cw"
+          },
+          "namespace": "AWS/ApiGateway",
+          "metricName": "Count",
+          "dimensions": {
+            "ApiName": "lab5-boda-api",
+            "Stage": "v1"
+          },
+          "statistic": "Sum",
+          "period": "60",
+          "region": "default",
+          "matchExact": true,
+          "metricQueryType": 0,
+          "metricEditorMode": 0,
+          "queryMode": "Metrics",
+          "id": "",
+          "expression": "",
+          "label": "requests/min"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "cloudwatch",
+            "uid": "cw"
+          },
+          "namespace": "AWS/ApiGateway",
+          "metricName": "5XXError",
+          "dimensions": {
+            "ApiName": "lab5-boda-api",
+            "Stage": "v1"
+          },
+          "statistic": "Sum",
+          "period": "60",
+          "region": "default",
+          "matchExact": true,
+          "metricQueryType": 0,
+          "metricEditorMode": 0,
+          "queryMode": "Metrics",
+          "id": "",
+          "expression": "",
+          "label": "errores 5xx"
+        }
+      ],
+      "datasource": {
+        "type": "cloudwatch",
+        "uid": "cw"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "bars",
+            "lineWidth": 2,
+            "fillOpacity": 20,
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "mode": "none"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "1 · Kinesis: registros",
+      "description": "",
+      "gridPos": {
+        "x": 4,
+        "y": 1,
+        "w": 4,
+        "h": 7
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "cloudwatch",
+            "uid": "cw"
+          },
+          "namespace": "AWS/Kinesis",
+          "metricName": "IncomingRecords",
+          "dimensions": {
+            "StreamName": "lab5-boda-stream"
+          },
+          "statistic": "Sum",
+          "period": "60",
+          "region": "default",
+          "matchExact": true,
+          "metricQueryType": 0,
+          "metricEditorMode": 0,
+          "queryMode": "Metrics",
+          "id": "",
+          "expression": "",
+          "label": "registros/min"
+        }
+      ],
+      "datasource": {
+        "type": "cloudwatch",
+        "uid": "cw"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "bars",
+            "lineWidth": 2,
+            "fillOpacity": 20,
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "mode": "none"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "2 · Lambda procesador",
+      "description": "Kinesis la dispara con lotes de hasta 100 registros",
+      "gridPos": {
+        "x": 8,
+        "y": 1,
+        "w": 4,
+        "h": 7
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "cloudwatch",
+            "uid": "cw"
+          },
+          "namespace": "AWS/Lambda",
+          "metricName": "Invocations",
+          "dimensions": {
+            "FunctionName": "lab5-boda-procesador"
+          },
+          "statistic": "Sum",
+          "period": "60",
+          "region": "default",
+          "matchExact": true,
+          "metricQueryType": 0,
+          "metricEditorMode": 0,
+          "queryMode": "Metrics",
+          "id": "",
+          "expression": "",
+          "label": "invocaciones"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "cloudwatch",
+            "uid": "cw"
+          },
+          "namespace": "AWS/Lambda",
+          "metricName": "Errors",
+          "dimensions": {
+            "FunctionName": "lab5-boda-procesador"
+          },
+          "statistic": "Sum",
+          "period": "60",
+          "region": "default",
+          "matchExact": true,
+          "metricQueryType": 0,
+          "metricEditorMode": 0,
+          "queryMode": "Metrics",
+          "id": "",
+          "expression": "",
+          "label": "errores"
+        }
+      ],
+      "datasource": {
+        "type": "cloudwatch",
+        "uid": "cw"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 20,
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "mode": "none"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "3 · SQS: entran / esperan",
+      "description": "",
+      "gridPos": {
+        "x": 12,
+        "y": 1,
+        "w": 4,
+        "h": 7
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "cloudwatch",
+            "uid": "cw"
+          },
+          "namespace": "AWS/SQS",
+          "metricName": "NumberOfMessagesSent",
+          "dimensions": {
+            "QueueName": "lab5-boda-eventos"
+          },
+          "statistic": "Sum",
+          "period": "60",
+          "region": "default",
+          "matchExact": true,
+          "metricQueryType": 0,
+          "metricEditorMode": 0,
+          "queryMode": "Metrics",
+          "id": "",
+          "expression": "",
+          "label": "a la cola"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "cloudwatch",
+            "uid": "cw"
+          },
+          "namespace": "AWS/SQS",
+          "metricName": "ApproximateNumberOfMessagesVisible",
+          "dimensions": {
+            "QueueName": "lab5-boda-eventos"
+          },
+          "statistic": "Maximum",
+          "period": "60",
+          "region": "default",
+          "matchExact": true,
+          "metricQueryType": 0,
+          "metricEditorMode": 0,
+          "queryMode": "Metrics",
+          "id": "",
+          "expression": "",
+          "label": "esperando"
+        }
+      ],
+      "datasource": {
+        "type": "cloudwatch",
+        "uid": "cw"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 20,
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "mode": "none"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "4 · Lambda guardar",
+      "description": "SQS la dispara con lotes de hasta 100; un INSERT multi-fila por lote",
+      "gridPos": {
+        "x": 16,
+        "y": 1,
+        "w": 4,
+        "h": 7
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "cloudwatch",
+            "uid": "cw"
+          },
+          "namespace": "AWS/Lambda",
+          "metricName": "Invocations",
+          "dimensions": {
+            "FunctionName": "lab5-boda-guardar"
+          },
+          "statistic": "Sum",
+          "period": "60",
+          "region": "default",
+          "matchExact": true,
+          "metricQueryType": 0,
+          "metricEditorMode": 0,
+          "queryMode": "Metrics",
+          "id": "",
+          "expression": "",
+          "label": "invocaciones"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "cloudwatch",
+            "uid": "cw"
+          },
+          "namespace": "AWS/Lambda",
+          "metricName": "Errors",
+          "dimensions": {
+            "FunctionName": "lab5-boda-guardar"
+          },
+          "statistic": "Sum",
+          "period": "60",
+          "region": "default",
+          "matchExact": true,
+          "metricQueryType": 0,
+          "metricEditorMode": 0,
+          "queryMode": "Metrics",
+          "id": "",
+          "expression": "",
+          "label": "errores"
+        }
+      ],
+      "datasource": {
+        "type": "cloudwatch",
+        "uid": "cw"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 20,
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "mode": "none"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 7,
+      "type": "stat",
+      "title": "☠️ DLQ",
+      "description": "Eventos inválidos o que fallaron 3 veces",
+      "gridPos": {
+        "x": 20,
+        "y": 1,
+        "w": 4,
+        "h": 7
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "cloudwatch",
+            "uid": "cw"
+          },
+          "namespace": "AWS/SQS",
+          "metricName": "ApproximateNumberOfMessagesVisible",
+          "dimensions": {
+            "QueueName": "lab5-boda-dlq"
+          },
+          "statistic": "Maximum",
+          "period": "60",
+          "region": "default",
+          "matchExact": true,
+          "metricQueryType": 0,
+          "metricEditorMode": 0,
+          "queryMode": "Metrics",
+          "id": "",
+          "expression": "",
+          "label": "mensajes en DLQ"
+        }
+      ],
+      "datasource": {
+        "type": "cloudwatch",
+        "uid": "cw"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "center"
+      }
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "⚡ Cache de API Gateway: hits vs misses",
+      "description": "Solo GET /resumen tiene cache",
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 6,
+        "h": 7
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "cloudwatch",
+            "uid": "cw"
+          },
+          "namespace": "AWS/ApiGateway",
+          "metricName": "CacheHitCount",
+          "dimensions": {
+            "ApiName": "lab5-boda-api",
+            "Stage": "v1"
+          },
+          "statistic": "Sum",
+          "period": "60",
+          "region": "default",
+          "matchExact": true,
+          "metricQueryType": 0,
+          "metricEditorMode": 0,
+          "queryMode": "Metrics",
+          "id": "",
+          "expression": "",
+          "label": "hits (respondió la cache)"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "cloudwatch",
+            "uid": "cw"
+          },
+          "namespace": "AWS/ApiGateway",
+          "metricName": "CacheMissCount",
+          "dimensions": {
+            "ApiName": "lab5-boda-api",
+            "Stage": "v1"
+          },
+          "statistic": "Sum",
+          "period": "60",
+          "region": "default",
+          "matchExact": true,
+          "metricQueryType": 0,
+          "metricEditorMode": 0,
+          "queryMode": "Metrics",
+          "id": "",
+          "expression": "",
+          "label": "misses (fue a Redshift)"
+        }
+      ],
+      "datasource": {
+        "type": "cloudwatch",
+        "uid": "cw"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "bars",
+            "lineWidth": 2,
+            "fillOpacity": 20,
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "mode": "none"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 9,
+      "type": "timeseries",
+      "title": "Latencia API: /resumen (cache) vs /db/resumen (sin cache)",
+      "description": "Misma consulta a Redshift; la diferencia es la cache",
+      "gridPos": {
+        "x": 6,
+        "y": 8,
+        "w": 6,
+        "h": 7
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "cloudwatch",
+            "uid": "cw"
+          },
+          "namespace": "AWS/ApiGateway",
+          "metricName": "Latency",
+          "dimensions": {
+            "ApiName": "lab5-boda-api",
+            "Stage": "v1",
+            "Method": "GET",
+            "Resource": "/resumen"
+          },
+          "statistic": "Average",
+          "period": "60",
+          "region": "default",
+          "matchExact": true,
+          "metricQueryType": 0,
+          "metricEditorMode": 0,
+          "queryMode": "Metrics",
+          "id": "",
+          "expression": "",
+          "label": "/resumen (con cache)"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "cloudwatch",
+            "uid": "cw"
+          },
+          "namespace": "AWS/ApiGateway",
+          "metricName": "Latency",
+          "dimensions": {
+            "ApiName": "lab5-boda-api",
+            "Stage": "v1",
+            "Method": "GET",
+            "Resource": "/db/resumen"
+          },
+          "statistic": "Average",
+          "period": "60",
+          "region": "default",
+          "matchExact": true,
+          "metricQueryType": 0,
+          "metricEditorMode": 0,
+          "queryMode": "Metrics",
+          "id": "",
+          "expression": "",
+          "label": "/db/resumen (sin cache)"
+        }
+      ],
+      "datasource": {
+        "type": "cloudwatch",
+        "uid": "cw"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 20,
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "mode": "none"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "5 · Redshift: CPU del clúster",
+      "description": "Clúster de 1 nodo; la cache de API Gateway evita consultas repetidas",
+      "gridPos": {
+        "x": 12,
+        "y": 8,
+        "w": 6,
+        "h": 7
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "cloudwatch",
+            "uid": "cw"
+          },
+          "namespace": "AWS/Redshift",
+          "metricName": "CPUUtilization",
+          "dimensions": {
+            "ClusterIdentifier": "lab5-boda-rs"
+          },
+          "statistic": "Average",
+          "period": "60",
+          "region": "default",
+          "matchExact": true,
+          "metricQueryType": 0,
+          "metricEditorMode": 0,
+          "queryMode": "Metrics",
+          "id": "",
+          "expression": "",
+          "label": "CPU %"
+        }
+      ],
+      "datasource": {
+        "type": "cloudwatch",
+        "uid": "cw"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 20,
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "mode": "none"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 11,
+      "type": "stat",
+      "title": "Eventos en Redshift",
+      "description": "Total en la tabla columnar (todas las bodas y pruebas)",
+      "gridPos": {
+        "x": 18,
+        "y": 8,
+        "w": 3,
+        "h": 7
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-redshift-datasource",
+            "uid": "rs"
+          },
+          "rawSQL": "SELECT COUNT(*) AS eventos FROM v_eventos",
+          "format": 1,
+          "fillMode": {
+            "mode": 0
+          }
+        }
+      ],
+      "datasource": {
+        "type": "grafana-redshift-datasource",
+        "uid": "rs"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "center"
+      }
+    },
+    {
+      "id": 12,
+      "type": "stat",
+      "title": "Latencia evento → Redshift",
+      "description": "Promedio desde que se genera el evento hasta que queda guardado",
+      "gridPos": {
+        "x": 21,
+        "y": 8,
+        "w": 3,
+        "h": 7
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-redshift-datasource",
+            "uid": "rs"
+          },
+          "rawSQL": "SELECT AVG(EXTRACT(EPOCH FROM guardado_en) - EXTRACT(EPOCH FROM ts)) AS segundos FROM v_eventos_actual",
+          "format": 1,
+          "fillMode": {
+            "mode": 0
+          }
+        }
+      ],
+      "datasource": {
+        "type": "grafana-redshift-datasource",
+        "uid": "rs"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "decimals": 1,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 30
+              },
+              {
+                "color": "red",
+                "value": 90
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "center"
+      }
+    },
+    {
+      "id": 13,
+      "type": "row",
+      "title": "② Panel del wedding planner (Redshift: vistas sobre la tabla columnar eventos)",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 15,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 14,
+      "type": "stat",
+      "title": "Invitados",
+      "description": "",
+      "gridPos": {
+        "x": 0,
+        "y": 16,
+        "w": 4,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-redshift-datasource",
+            "uid": "rs"
+          },
+          "rawSQL": "SELECT COUNT(*) AS n FROM v_invitados_actual",
+          "format": 1,
+          "fillMode": {
+            "mode": 0
+          }
+        }
+      ],
+      "datasource": {
+        "type": "grafana-redshift-datasource",
+        "uid": "rs"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "center"
+      }
+    },
+    {
+      "id": 15,
+      "type": "stat",
+      "title": "✅ Confirmados",
+      "description": "",
+      "gridPos": {
+        "x": 4,
+        "y": 16,
+        "w": 4,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-redshift-datasource",
+            "uid": "rs"
+          },
+          "rawSQL": "SELECT COUNT(CASE WHEN estado = 'confirmado' THEN 1 END) AS n FROM v_invitados_actual",
+          "format": 1,
+          "fillMode": {
+            "mode": 0
+          }
+        }
+      ],
+      "datasource": {
+        "type": "grafana-redshift-datasource",
+        "uid": "rs"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "center"
+      }
+    },
+    {
+      "id": 16,
+      "type": "stat",
+      "title": "❌ Cancelados",
+      "description": "",
+      "gridPos": {
+        "x": 8,
+        "y": 16,
+        "w": 4,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-redshift-datasource",
+            "uid": "rs"
+          },
+          "rawSQL": "SELECT COUNT(CASE WHEN estado = 'cancelado' THEN 1 END) AS n FROM v_invitados_actual",
+          "format": 1,
+          "fillMode": {
+            "mode": 0
+          }
+        }
+      ],
+      "datasource": {
+        "type": "grafana-redshift-datasource",
+        "uid": "rs"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "center"
+      }
+    },
+    {
+      "id": 17,
+      "type": "stat",
+      "title": "⏳ Sin responder",
+      "description": "",
+      "gridPos": {
+        "x": 12,
+        "y": 16,
+        "w": 4,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-redshift-datasource",
+            "uid": "rs"
+          },
+          "rawSQL": "SELECT COUNT(CASE WHEN estado = 'pendiente' THEN 1 END) AS n FROM v_invitados_actual",
+          "format": 1,
+          "fillMode": {
+            "mode": 0
+          }
+        }
+      ],
+      "datasource": {
+        "type": "grafana-redshift-datasource",
+        "uid": "rs"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "orange",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "center"
+      }
+    },
+    {
+      "id": 18,
+      "type": "stat",
+      "title": "🪑 Confirmados sin mesa",
+      "description": "",
+      "gridPos": {
+        "x": 16,
+        "y": 16,
+        "w": 4,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-redshift-datasource",
+            "uid": "rs"
+          },
+          "rawSQL": "SELECT COUNT(CASE WHEN estado = 'confirmado' AND mesa IS NULL THEN 1 END) AS n FROM v_invitados_actual",
+          "format": 1,
+          "fillMode": {
+            "mode": 0
+          }
+        }
+      ],
+      "datasource": {
+        "type": "grafana-redshift-datasource",
+        "uid": "rs"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "orange",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "center"
+      }
+    },
+    {
+      "id": 19,
+      "type": "stat",
+      "title": "🚪 Ya llegaron",
+      "description": "",
+      "gridPos": {
+        "x": 20,
+        "y": 16,
+        "w": 4,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-redshift-datasource",
+            "uid": "rs"
+          },
+          "rawSQL": "SELECT COUNT(CASE WHEN llego THEN 1 END) AS n FROM v_invitados_actual",
+          "format": 1,
+          "fillMode": {
+            "mode": 0
+          }
+        }
+      ],
+      "datasource": {
+        "type": "grafana-redshift-datasource",
+        "uid": "rs"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "center"
+      }
+    },
+    {
+      "id": 20,
+      "type": "piechart",
+      "title": "RSVP: ¿quién viene?",
+      "description": "",
+      "gridPos": {
+        "x": 0,
+        "y": 20,
+        "w": 7,
+        "h": 9
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-redshift-datasource",
+            "uid": "rs"
+          },
+          "rawSQL": "SELECT estado, COUNT(*) AS invitados FROM v_invitados_actual GROUP BY estado ORDER BY invitados DESC",
+          "format": 1,
+          "fillMode": {
+            "mode": 0
+          }
+        }
+      ],
+      "datasource": {
+        "type": "grafana-redshift-datasource",
+        "uid": "rs"
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": true
+        },
+        "pieType": "donut",
+        "displayLabels": [],
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true,
+          "values": [
+            "value",
+            "percent"
+          ]
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "confirmado"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "green"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "cancelado"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "red"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "pendiente"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "orange"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 21,
+      "type": "barchart",
+      "title": "🍽️ Platillos para el catering (confirmados)",
+      "description": "",
+      "gridPos": {
+        "x": 7,
+        "y": 20,
+        "w": 7,
+        "h": 9
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-redshift-datasource",
+            "uid": "rs"
+          },
+          "rawSQL": "SELECT menu AS platillo, COUNT(*) AS platos FROM v_invitados_actual WHERE estado = 'confirmado' AND menu IS NOT NULL GROUP BY menu ORDER BY platos DESC",
+          "format": 1,
+          "fillMode": {
+            "mode": 0
+          }
+        }
+      ],
+      "datasource": {
+        "type": "grafana-redshift-datasource",
+        "uid": "rs"
+      },
+      "options": {
+        "orientation": "horizontal",
+        "showValue": "always",
+        "legend": {
+          "showLegend": false
+        },
+        "xTickLabelRotation": 0
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "purple"
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 22,
+      "type": "bargauge",
+      "title": "Ocupación por mesa (cupo 10)",
+      "description": "Rojo = sobrecupo. Solo cuenta confirmados: una cancelación libera el lugar",
+      "gridPos": {
+        "x": 14,
+        "y": 20,
+        "w": 10,
+        "h": 9
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-redshift-datasource",
+            "uid": "rs"
+          },
+          "rawSQL": "SELECT 'Mesa ' || LPAD(CAST(mesa AS VARCHAR), 2, '0') AS etiqueta, COUNT(*) AS personas FROM v_invitados_actual WHERE estado = 'confirmado' AND mesa IS NOT NULL GROUP BY mesa ORDER BY mesa",
+          "format": 1,
+          "fillMode": {
+            "mode": 0
+          }
+        }
+      ],
+      "datasource": {
+        "type": "grafana-redshift-datasource",
+        "uid": "rs"
+      },
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "showUnfilled": true,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": true
+        },
+        "valueMode": "color",
+        "namePlacement": "left"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "min": 0,
+          "max": 12,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 10
+              },
+              {
+                "color": "red",
+                "value": 11
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 23,
+      "type": "timeseries",
+      "title": "Eventos guardados por tipo (cada 30 s)",
+      "description": "invitacion → rsvp → asiento → checkin: así avanza la boda",
+      "gridPos": {
+        "x": 0,
+        "y": 29,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-redshift-datasource",
+            "uid": "rs"
+          },
+          "rawSQL": "SELECT TIMESTAMP 'epoch' + FLOOR(EXTRACT(EPOCH FROM ts) / 30) * 30 * INTERVAL '1 second' AS time, tipo AS metric, COUNT(*) AS value FROM v_eventos_actual WHERE $__timeFilter(ts) GROUP BY 1, 2 ORDER BY 1",
+          "format": 0,
+          "fillMode": {
+            "mode": 0
+          }
+        }
+      ],
+      "datasource": {
+        "type": "grafana-redshift-datasource",
+        "uid": "rs"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "bars",
+            "lineWidth": 2,
+            "fillOpacity": 20,
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "mode": "normal"
+            }
+          },
+          "displayName": "${__field.labels.metric}"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 24,
+      "type": "timeseries",
+      "title": "🚪 Llegadas acumuladas vs. confirmados",
+      "description": "Escaneos en la puerta (QR / pulsera) contra el total que confirmó",
+      "gridPos": {
+        "x": 12,
+        "y": 29,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-redshift-datasource",
+            "uid": "rs"
+          },
+          "rawSQL": "SELECT t AS time, SUM(n) OVER (ORDER BY t ROWS UNBOUNDED PRECEDING) AS llegaron FROM (SELECT TIMESTAMP 'epoch' + FLOOR(EXTRACT(EPOCH FROM hora_llegada) / 15) * 15 * INTERVAL '1 second' AS t, COUNT(*) AS n FROM v_invitados_actual WHERE llego AND $__timeFilter(hora_llegada) GROUP BY 1) x ORDER BY 1",
+          "format": 0,
+          "fillMode": {
+            "mode": 0
+          }
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-redshift-datasource",
+            "uid": "rs"
+          },
+          "rawSQL": "SELECT CAST($__timeFrom() AS TIMESTAMP) AS time, COUNT(CASE WHEN estado = 'confirmado' THEN 1 END) AS confirmados FROM v_invitados_actual UNION ALL SELECT CAST($__timeTo() AS TIMESTAMP), COUNT(CASE WHEN estado = 'confirmado' THEN 1 END) FROM v_invitados_actual ORDER BY 1",
+          "format": 0,
+          "fillMode": {
+            "mode": 0
+          }
+        }
+      ],
+      "datasource": {
+        "type": "grafana-redshift-datasource",
+        "uid": "rs"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 20,
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "mode": "none"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 25,
+      "type": "table",
+      "title": "🚨 Alertas para el planner",
+      "description": "Cancelaciones y catering vienen del procesador; colados y sobrecupo se calculan con SQL",
+      "gridPos": {
+        "x": 0,
+        "y": 37,
+        "w": 10,
+        "h": 11
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-redshift-datasource",
+            "uid": "rs"
+          },
+          "rawSQL": "SELECT hora, quien, alerta FROM ( SELECT ts AS hora, invitado_id || ' · ' || COALESCE(nombre, '') AS quien, motivo_alerta AS alerta FROM v_eventos_actual WHERE alerta AND motivo_alerta <> 'canceló' UNION ALL SELECT hora_llegada, invitado_id || ' · ' || nombre, 'llegó sin estar confirmado (' || estado || ')' FROM v_invitados_actual WHERE llego AND estado <> 'confirmado' UNION ALL SELECT MAX(rsvp_ts), 'Mesa ' || CAST(mesa AS VARCHAR), 'sobrecupo: ' || CAST(COUNT(*) AS VARCHAR) || ' personas para 10 lugares' FROM v_invitados_actual WHERE estado = 'confirmado' AND mesa IS NOT NULL GROUP BY mesa HAVING COUNT(*) > 10 ) a ORDER BY hora DESC LIMIT 40",
+          "format": 1,
+          "fillMode": {
+            "mode": 0
+          }
+        }
+      ],
+      "datasource": {
+        "type": "grafana-redshift-datasource",
+        "uid": "rs"
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      }
+    },
+    {
+      "id": 26,
+      "type": "table",
+      "title": "📋 Lista de invitados (vista v_invitados_actual)",
+      "description": "Estado actual calculado con funciones de ventana sobre la tabla de eventos",
+      "gridPos": {
+        "x": 10,
+        "y": 37,
+        "w": 14,
+        "h": 11
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-redshift-datasource",
+            "uid": "rs"
+          },
+          "rawSQL": "SELECT nombre, lado, estado, mesa, asiento, menu, restriccion, CASE WHEN llego THEN '✅' ELSE '' END AS llego, hora_llegada FROM v_invitados_actual ORDER BY mesa NULLS LAST, asiento, nombre",
+          "format": 1,
+          "fillMode": {
+            "mode": 0
+          }
+        }
+      ],
+      "datasource": {
+        "type": "grafana-redshift-datasource",
+        "uid": "rs"
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "estado"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "confirmado": {
+                        "color": "green",
+                        "index": 0
+                      },
+                      "cancelado": {
+                        "color": "red",
+                        "index": 1
+                      },
+                      "pendiente": {
+                        "color": "orange",
+                        "index": 2
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 27,
+      "type": "table",
+      "title": "📡 El stream en vivo: últimos eventos en Redshift (tabla eventos)",
+      "description": "seg_hasta_redshift = desde que se generó el evento hasta que quedó guardado",
+      "gridPos": {
+        "x": 0,
+        "y": 48,
+        "w": 24,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-redshift-datasource",
+            "uid": "rs"
+          },
+          "rawSQL": "SELECT ts AS hora, tipo, nombre, respuesta, menu, restriccion, mesa, asiento, metodo, ROUND(EXTRACT(EPOCH FROM guardado_en) - EXTRACT(EPOCH FROM ts), 1) AS seg_hasta_redshift FROM v_eventos_actual ORDER BY ts DESC LIMIT 15",
+          "format": 1,
+          "fillMode": {
+            "mode": 0
+          }
+        }
+      ],
+      "datasource": {
+        "type": "grafana-redshift-datasource",
+        "uid": "rs"
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      }
+    }
+  ]
+}

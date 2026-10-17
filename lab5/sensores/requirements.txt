@@ -1,0 +1,3 @@
+# El simulador y la prueba de carga solo usan la librería estándar de Python.
+# verificar_cuenta.py (en la raíz de lab5) usa boto3:
+boto3>=1.34

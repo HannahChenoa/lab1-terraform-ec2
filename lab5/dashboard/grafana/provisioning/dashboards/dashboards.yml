@@ -1,0 +1,9 @@
+apiVersion: 1
+
+providers:
+  - name: lab5
+    folder: Lab 5
+    type: file
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards

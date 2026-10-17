@@ -1,0 +1,29 @@
+# Grafana con el dashboard "Boda en vivo" ya cargado, leyendo Amazon Redshift
+# (plugin oficial grafana-redshift-datasource) y CloudWatch.
+#   docker compose up -d     ->  http://localhost:3000
+#
+# AWS Managed Grafana necesita IAM Identity Center (SSO), que el Learner Lab no
+# permite habilitar; ver probar_servicios.ps1 y la sección del README.
+services:
+  grafana:
+    image: grafana/grafana:11.3.0
+    container_name: lab5-grafana
+    ports:
+      - "3000:3000"
+    env_file: .env # lo genera preparar.ps1
+    environment:
+      GF_INSTALL_PLUGINS: grafana-redshift-datasource
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+      GF_AUTH_DISABLE_LOGIN_FORM: "true"
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/boda.json
+      # Credenciales del Learner Lab (las mismas que usa Terraform)
+      AWS_SHARED_CREDENTIALS_FILE: /aws/credentials
+      AWS_CONFIG_FILE: /aws/config
+      AWS_PROFILE: academy
+      AWS_REGION: us-east-1
+      AWS_SDK_LOAD_CONFIG: "true"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - ${USERPROFILE}/.aws:/aws:ro

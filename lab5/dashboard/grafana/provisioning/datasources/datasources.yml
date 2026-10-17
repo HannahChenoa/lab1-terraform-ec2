@@ -1,0 +1,29 @@
+apiVersion: 1
+
+# Se borra el datasource de PostgreSQL de la versión anterior del lab
+deleteDatasources:
+  - name: PostgreSQL boda
+    orgId: 1
+
+datasources:
+  - name: Redshift boda
+    uid: rs
+    type: grafana-redshift-datasource
+    isDefault: true
+    jsonData:
+      authType: default # usa AWS_PROFILE=academy del contenedor
+      defaultRegion: us-east-1
+      useServerless: false
+      clusterIdentifier: "${REDSHIFT_CLUSTER}"
+      database: "${REDSHIFT_DATABASE}"
+      useManagedSecret: true
+      managedSecret:
+        name: "${REDSHIFT_SECRET_NAME}"
+        arn: "${REDSHIFT_SECRET_ARN}"
+
+  - name: CloudWatch
+    uid: cw
+    type: cloudwatch
+    jsonData:
+      authType: default
+      defaultRegion: us-east-1

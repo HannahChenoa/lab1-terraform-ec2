@@ -1,0 +1,9 @@
+infra/.terraform/
+infra/build/
+infra/layers/
+*.tfstate*
+*.tfvars
+sensores/outputs.json
+dashboard/.env
+__pycache__/
+.venv/
